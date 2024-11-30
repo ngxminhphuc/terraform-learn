@@ -11,45 +11,46 @@ provider "aws" {
   region = "ap-southeast-1"
 }
 
-variable "environment" {
-  description = "deployment environment"
-  type        = string
-}
+variable "vpc_cidr_block" {}
 
-variable "subnet_cidr_block" {
-  description = "subnet cidr block"
-  type        = string
-}
+variable "subnet_cidr_block" {}
 
-variable "vpc_cidr_block" {
-  description = "vpc cidr block"
-  type        = string
-}
+variable "avail_zone" {}
 
-variable "avail_zone" {
-  
-}
+variable "env_prefix" {}
 
-resource "aws_vpc" "development-vpc" {
+resource "aws_vpc" "crew-app-vpc" {
   cidr_block = var.vpc_cidr_block
   tags = {
-    "Name" = "${var.environment}-vpc"
+    "Name" = "${var.env_prefix}-crew-app-vpc"
   }
 }
 
-resource "aws_subnet" "dev-subnet-1" {
-  vpc_id            = aws_vpc.development-vpc.id
+resource "aws_subnet" "crew-app-subnet-1" {
+  vpc_id            = aws_vpc.crew-app-vpc.id
   cidr_block        = var.subnet_cidr_block
   availability_zone = var.avail_zone
   tags = {
-    "Name" = "subnet-1-dev"
+    "Name" = "${var.env_prefix}-crew-app-subnet-1"
   }
 }
 
-output "dev-vpc-id" {
-  value = aws_vpc.development-vpc.id
+resource "aws_route_table" "crew-app-route-table" {
+  vpc_id = aws_vpc.crew-app-vpc.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.crew-app-igw.id
+  }
+
+  tags = {
+    "Name" = "${var.env_prefix}-crew-app-rtb"
+  }
 }
 
-output "dev-subnet-1-id" {
-  value = aws_subnet.dev-subnet-1.id
+resource "aws_internet_gateway" "crew-app-igw" {
+  vpc_id = aws_vpc.crew-app-vpc.id
+  tags = {
+    "Name" = "${var.env_prefix}-crew-app-igw"
+  }
 }
