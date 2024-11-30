@@ -54,3 +54,8 @@ resource "aws_internet_gateway" "crew-app-igw" {
     "Name" = "${var.env_prefix}-crew-app-igw"
   }
 }
+
+resource "aws_route_table_association" "crew-app-rtb-assoc-subnet-1" {
+  subnet_id = aws_subnet.crew-app-subnet-1.id
+  route_table_id = aws_route_table.crew-app-route-table.id
+}
