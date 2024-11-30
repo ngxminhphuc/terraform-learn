@@ -35,8 +35,8 @@ resource "aws_subnet" "crew-app-subnet-1" {
   }
 }
 
-resource "aws_route_table" "crew-app-route-table" {
-  vpc_id = aws_vpc.crew-app-vpc.id
+resource "aws_default_route_table" "crew-app-main-rtb" {
+  default_route_table_id = aws_vpc.crew-app-vpc.default_route_table_id
 
   route {
     cidr_block = "0.0.0.0/0"
@@ -44,7 +44,7 @@ resource "aws_route_table" "crew-app-route-table" {
   }
 
   tags = {
-    "Name" = "${var.env_prefix}-crew-app-rtb"
+    "Name" = "${var.env_prefix}-crew-app-main-rtb"
   }
 }
 
@@ -53,9 +53,4 @@ resource "aws_internet_gateway" "crew-app-igw" {
   tags = {
     "Name" = "${var.env_prefix}-crew-app-igw"
   }
-}
-
-resource "aws_route_table_association" "crew-app-rtb-assoc-subnet-1" {
-  subnet_id = aws_subnet.crew-app-subnet-1.id
-  route_table_id = aws_route_table.crew-app-route-table.id
 }
