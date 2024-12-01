@@ -19,6 +19,8 @@ variable "avail_zone" {}
 
 variable "env_prefix" {}
 
+variable "local_cidr_ipv4" {}
+
 resource "aws_vpc" "crew-app-vpc" {
   cidr_block = var.vpc_cidr_block
   tags = {
@@ -52,5 +54,51 @@ resource "aws_internet_gateway" "crew-app-igw" {
   vpc_id = aws_vpc.crew-app-vpc.id
   tags = {
     "Name" = "${var.env_prefix}-crew-app-igw"
+  }
+}
+
+resource "aws_security_group" "crew-app-sg" {
+  name   = "crew-app-sg"
+  vpc_id = aws_vpc.crew-app-vpc.id
+
+  tags = {
+    "Name" = "${var.env_prefix}-crew-app-sg"
+  }
+}
+
+resource "aws_vpc_security_group_ingress_rule" "crew-app-sg-ingress-1" {
+  security_group_id = aws_security_group.crew-app-sg.id
+
+  from_port   = 22
+  to_port     = 22
+  ip_protocol = "tcp"
+  cidr_ipv4   = var.local_cidr_ipv4
+
+  tags = {
+    "Name" = "${var.env_prefix}-crew-app-sg-ingress-1"
+  }
+}
+
+resource "aws_vpc_security_group_ingress_rule" "crew-app-sg-ingress-2" {
+  security_group_id = aws_security_group.crew-app-sg.id
+
+  from_port   = 8080
+  to_port     = 8080
+  ip_protocol = "tcp"
+  cidr_ipv4   = "0.0.0.0/0"
+
+  tags = {
+    "Name" = "${var.env_prefix}-crew-app-sg-ingress-2"
+  }
+}
+
+resource "aws_vpc_security_group_egress_rule" "crew-app-sg-egress-1" {
+  security_group_id = aws_security_group.crew-app-sg.id
+
+  ip_protocol = "-1"
+  cidr_ipv4   = "0.0.0.0/0"
+
+  tags = {
+    "Name" = "${var.env_prefix}-crew-app-sg-egress-1"
   }
 }
