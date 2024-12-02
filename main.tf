@@ -21,6 +21,8 @@ variable "env_prefix" {}
 
 variable "local_cidr_ipv4" {}
 
+variable "local_public_key_location" {}
+
 resource "aws_vpc" "crew-app-vpc" {
   cidr_block = var.vpc_cidr_block
   tags = {
@@ -66,7 +68,7 @@ resource "aws_security_group" "crew-app-sg" {
   }
 }
 
-resource "aws_vpc_security_group_ingress_rule" "crew-app-sg-ingress-1" {
+resource "aws_vpc_security_group_ingress_rule" "crew-app-sg-allow-ssh" {
   security_group_id = aws_security_group.crew-app-sg.id
 
   from_port   = 22
@@ -75,11 +77,37 @@ resource "aws_vpc_security_group_ingress_rule" "crew-app-sg-ingress-1" {
   cidr_ipv4   = var.local_cidr_ipv4
 
   tags = {
-    "Name" = "${var.env_prefix}-crew-app-sg-ingress-1"
+    "Name" = "${var.env_prefix}-crew-app-sg-allow-ssh"
   }
 }
 
-resource "aws_vpc_security_group_ingress_rule" "crew-app-sg-ingress-2" {
+resource "aws_vpc_security_group_ingress_rule" "crew-app-sg-allow-http" {
+  security_group_id = aws_security_group.crew-app-sg.id
+
+  from_port   = 80
+  to_port     = 80
+  ip_protocol = "tcp"
+  cidr_ipv4   = "0.0.0.0/0"
+
+  tags = {
+    "Name" = "${var.env_prefix}-crew-app-sg-allow-http"
+  }
+}
+
+resource "aws_vpc_security_group_ingress_rule" "crew-app-sg-allow-https" {
+  security_group_id = aws_security_group.crew-app-sg.id
+
+  from_port   = 443
+  to_port     = 443
+  ip_protocol = "tcp"
+  cidr_ipv4   = "0.0.0.0/0"
+
+  tags = {
+    "Name" = "${var.env_prefix}-crew-app-sg-allow-https"
+  }
+}
+
+resource "aws_vpc_security_group_ingress_rule" "crew-app-sg-custom-tcp" {
   security_group_id = aws_security_group.crew-app-sg.id
 
   from_port   = 8080
@@ -88,17 +116,64 @@ resource "aws_vpc_security_group_ingress_rule" "crew-app-sg-ingress-2" {
   cidr_ipv4   = "0.0.0.0/0"
 
   tags = {
-    "Name" = "${var.env_prefix}-crew-app-sg-ingress-2"
+    "Name" = "${var.env_prefix}-crew-app-sg-custom-tcp"
   }
 }
 
-resource "aws_vpc_security_group_egress_rule" "crew-app-sg-egress-1" {
+resource "aws_vpc_security_group_egress_rule" "crew-app-sg-egress-all" {
   security_group_id = aws_security_group.crew-app-sg.id
 
   ip_protocol = "-1"
   cidr_ipv4   = "0.0.0.0/0"
 
   tags = {
-    "Name" = "${var.env_prefix}-crew-app-sg-egress-1"
+    "Name" = "${var.env_prefix}-crew-app-sg-egress-all"
   }
+}
+
+data "aws_ami" "latest-amazon-linux-image" {
+  most_recent = true
+  owners      = ["amazon"]
+
+  filter {
+    name   = "name"
+    values = ["amzn2-ami-kernel-*-hvm-*-x86_64-gp2"]
+  }
+
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }
+}
+
+resource "aws_key_pair" "ssh-key" {
+  key_name   = "${var.env_prefix}-crew-app-server-key"
+  public_key = file(var.local_public_key_location)
+}
+
+resource "aws_instance" "crew-app-server" {
+  ami           = data.aws_ami.latest-amazon-linux-image.id
+  instance_type = "t2.micro"
+
+  subnet_id              = aws_subnet.crew-app-subnet-1.id
+  vpc_security_group_ids = [aws_security_group.crew-app-sg.id]
+  availability_zone      = var.avail_zone
+
+  associate_public_ip_address = true
+  key_name                    = aws_key_pair.ssh-key.key_name
+
+  user_data                   = file("entry-script.sh")
+  user_data_replace_on_change = true
+
+  tags = {
+    "Name" = "${var.env_prefix}-crew-app-server"
+  }
+}
+
+output "aws_ami_id" {
+  value = data.aws_ami.latest-amazon-linux-image.id
+}
+
+output "ec2_public_ip" {
+  value = aws_instance.crew-app-server.public_ip
 }

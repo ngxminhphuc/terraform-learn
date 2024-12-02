@@ -1,0 +1,6 @@
+vpc_cidr_block            = "10.221.0.0/16"
+subnet_cidr_block         = "10.221.163.0/24"
+avail_zone                = "ap-southeast-1a"
+env_prefix                = "dev"
+local_cidr_ipv4           = "1.54.153.94/32"
+local_public_key_location = "C:/Users/ngxminhphuc/.ssh/id_rsa.pub"
