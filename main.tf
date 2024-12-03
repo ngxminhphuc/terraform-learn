@@ -110,8 +110,8 @@ resource "aws_vpc_security_group_ingress_rule" "crew-app-sg-allow-https" {
 resource "aws_vpc_security_group_ingress_rule" "crew-app-sg-custom-tcp" {
   security_group_id = aws_security_group.crew-app-sg.id
 
-  from_port   = 8080
-  to_port     = 8080
+  from_port   = 3000
+  to_port     = 3000
   ip_protocol = "tcp"
   cidr_ipv4   = "0.0.0.0/0"
 
@@ -137,7 +137,7 @@ data "aws_ami" "latest-amazon-linux-image" {
 
   filter {
     name   = "name"
-    values = ["amzn2-ami-kernel-*-hvm-*-x86_64-gp2"]
+    values = ["al2023-ami-2023*x86_64"]
   }
 
   filter {
